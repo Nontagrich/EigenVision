@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>EigenVision – Eigenvalue & Eigenvector Visualizer</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/10.0.0/math.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      text-align: center;
+      max-width: 500px;
+      width: 100%;
+      padding: 20px;
+      background: white;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      border-radius: 12px;
+    }
+
+    canvas {
+      border: 1px solid #ccc;
+      margin-top: 20px;
+    }
+
+    input {
+      width: 50px;
+      margin: 5px;
+      text-align: center;
+      font-size: 16px;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 6px 16px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    #eigenInfo {
+      margin-top: 15px;
+      font-size: 14px;
+      text-align: left;
+    }
+
+    .legend {
+      margin-top: 10px;
+      font-size: 14px;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <hr>
+    <h2>EigenVision – Visualize Eigenvalues & Eigenvectors</h2>
+    <p>ใส่เมทริกซ์ 2×2:</p>
+    <input type="number" id="a00" value="2">
+    <input type="number" id="a01" value="1"><br>
+    <input type="number" id="a10" value="1">
+    <input type="number" id="a11" value="2"><br>
+    <button onclick="updateMatrix()">อัปเดตเมทริกซ์</button>
+
+    <!-- ✅ Legend: คำอธิบายสี -->
+    <div class="legend">
+      <b>คำอธิบายสี:</b><br>
+      <span style="color: gray;">⚪ เวกเตอร์พื้นฐาน</span> – ก่อนการแปลง<br>
+      <span style="color: #2196F3;">🟦 เวกเตอร์หลังแปลง</span> – ผลลัพธ์ของ A × v<br>
+      <span style="color: #E91E63;">🌸 Eigenvector</span> – ทิศทางที่ไม่เปลี่ยนหลังแปลง
+    </div>
+
+    <!-- ค่าทางคณิตศาสตร์ -->
+    <div id="eigenInfo"></div>
+  </div>
+
+  <script>
+    let matrix = [[2, 1], [1, 2]];
+    let eigenData;
+
+    function updateMatrix() {
+      matrix = [
+        [parseFloat(document.getElementById("a00").value),
+         parseFloat(document.getElementById("a01").value)],
+        [parseFloat(document.getElementById("a10").value),
+         parseFloat(document.getElementById("a11").value)]
+      ];
+      eigenData = math.eigs(matrix);
+      redraw();
+      updateInfo();
+    }
+
+    function updateInfo() {
+      const eigenDiv = document.getElementById("eigenInfo");
+      eigenDiv.innerHTML = `<b>Eigenvalues:</b> ${eigenData.values.map(v => v.toFixed(2)).join(', ')}<br>
+        <b>Eigenvectors:</b><br>` +
+        eigenData.vectors.map((v, i) =>
+          `λ = ${eigenData.values[i].toFixed(2)} → [${v.map(x => x.toFixed(2)).join(', ')}]`
+        ).join("<br>");
+    }
+
+    function setup() {
+      let c = createCanvas(400, 400);
+      c.parent(document.querySelector('.container'));
+      eigenData = math.eigs(matrix);
+      noLoop();
+    }
+
+    function drawArrow(x1, y1, x2, y2, color) {
+      stroke(color);
+      strokeWeight(2);
+      fill(color);
+      let dx = x2 - x1;
+      let dy = y2 - y1;
+      let len = Math.sqrt(dx*dx + dy*dy);
+      let ux = dx / len;
+      let uy = dy / len;
+
+      line(x1, y1, x2, y2);
+      push();
+      translate(x2, y2);
+      rotate(Math.atan2(dy, dx));
+      triangle(-6, 3, -6, -3, 0, 0);
+      pop();
+    }
+
+    function drawVector(v, color) {
+      let scale = 40;
+      let origin = createVector(width/2, height/2);
+      let vec = createVector(v[0]*scale, -v[1]*scale);
+      drawArrow(origin.x, origin.y, origin.x + vec.x, origin.y + vec.y, color);
+    }
+
+    function draw() {
+      background(255);
+
+      // ⚪ เวกเตอร์พื้นฐาน
+      drawVector([1, 0], 'gray');
+      drawVector([0, 1], 'gray');
+
+      // 🟦 เวกเตอร์ถูกแปลง
+      [[1, 1], [-1, 1], [1, -1], [-1, -1]].forEach(v => {
+        let transformed = math.multiply(matrix, v);
+        drawVector(transformed, '#2196F3');
+      });
+
+      // 🌸 Eigenvectors
+      eigenData.vectors.forEach((v, i) => {
+        drawVector(v, '#E91E63');
+      });
+    }
+  </script>
+</body>
+</html>
